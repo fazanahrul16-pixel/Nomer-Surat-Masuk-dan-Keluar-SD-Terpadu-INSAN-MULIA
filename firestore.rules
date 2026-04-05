@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: incomingMails
+    // Document ID: auto-generated
+    // Fields:
+    //   - mailNumber: string (required)
+    //   - sender: string (required)
+    //   - subject: string (required)
+    //   - receivedDate: string (required, date format)
+    //   - mailDate: string (required, date format)
+    //   - notes: string (optional)
+    //   - createdBy: string (required, uid)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: outgoingMails
+    // Document ID: auto-generated
+    // Fields:
+    //   - mailNumber: string (required)
+    //   - recipient: string (required)
+    //   - subject: string (required)
+    //   - mailDate: string (required, date format)
+    //   - notes: string (optional)
+    //   - createdBy: string (required, uid)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: users
+    // Document ID: uid
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - role: string (required, enum: ['admin', 'staff'])
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "fazanahrul16@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}$");
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidIncomingMail(data) {
+      return hasRequiredFields(['mailNumber', 'sender', 'subject', 'receivedDate', 'mailDate', 'createdBy', 'createdAt']) &&
+             data.mailNumber is string && data.mailNumber.size() > 0 && data.mailNumber.size() < 100 &&
+             data.sender is string && data.sender.size() > 0 && data.sender.size() < 200 &&
+             data.subject is string && data.subject.size() > 0 && data.subject.size() < 500 &&
+             isValidDateString(data.receivedDate) &&
+             isValidDateString(data.mailDate) &&
+             data.createdBy == request.auth.uid &&
+             data.createdAt == request.time;
+    }
+
+    function isValidOutgoingMail(data) {
+      return hasRequiredFields(['mailNumber', 'recipient', 'subject', 'mailDate', 'createdBy', 'createdAt']) &&
+             data.mailNumber is string && data.mailNumber.size() > 0 && data.mailNumber.size() < 100 &&
+             data.recipient is string && data.recipient.size() > 0 && data.recipient.size() < 200 &&
+             data.subject is string && data.subject.size() > 0 && data.subject.size() < 500 &&
+             isValidDateString(data.mailDate) &&
+             data.createdBy == request.auth.uid &&
+             data.createdAt == request.time;
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'role']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'staff'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(uid) && isValidUser(request.resource.data) && (request.resource.data.role == 'staff' || isAdmin());
+      allow update: if isAuthenticated() && isOwner(uid) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /incomingMails/{mailId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidIncomingMail(request.resource.data);
+      allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.createdBy) && isValidIncomingMail(request.resource.data);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    match /outgoingMails/{mailId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidOutgoingMail(request.resource.data);
+      allow update: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.createdBy) && isValidOutgoingMail(request.resource.data);
+      allow delete: if isAuthenticated() && isAdmin();
+    }
+  }
+}

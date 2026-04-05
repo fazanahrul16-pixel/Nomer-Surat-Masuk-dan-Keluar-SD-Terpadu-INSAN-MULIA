@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "IncomingMail": {
+      "title": "Incoming Mail",
+      "description": "Records of incoming mail for SD Terpadu Insan Mulia",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "mailNumber": { "type": "string", "description": "Nomor Surat" },
+        "sender": { "type": "string", "description": "Asal Surat / Pengirim" },
+        "subject": { "type": "string", "description": "Perihal" },
+        "receivedDate": { "type": "string", "format": "date", "description": "Tanggal Terima" },
+        "mailDate": { "type": "string", "format": "date", "description": "Tanggal Surat" },
+        "notes": { "type": "string", "description": "Keterangan" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["mailNumber", "sender", "subject", "receivedDate", "mailDate"]
+    },
+    "OutgoingMail": {
+      "title": "Outgoing Mail",
+      "description": "Records of outgoing mail for SD Terpadu Insan Mulia",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "mailNumber": { "type": "string", "description": "Nomor Surat" },
+        "recipient": { "type": "string", "description": "Tujuan Surat / Penerima" },
+        "subject": { "type": "string", "description": "Perihal" },
+        "mailDate": { "type": "string", "format": "date", "description": "Tanggal Surat" },
+        "notes": { "type": "string", "description": "Keterangan" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["mailNumber", "recipient", "subject", "mailDate"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and role",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff"] }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/incomingMails/{mailId}": {
+      "schema": "IncomingMail",
+      "description": "Collection of incoming mails"
+    },
+    "/outgoingMails/{mailId}": {
+      "schema": "OutgoingMail",
+      "description": "Collection of outgoing mails"
+    },
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles"
+    }
+  }
+}

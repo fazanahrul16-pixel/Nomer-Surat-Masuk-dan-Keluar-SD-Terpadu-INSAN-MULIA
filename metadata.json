@@ -1,0 +1,5 @@
+{
+  "name": "Sistem Persuratan SD Terpadu Insan Mulia",
+  "description": "Aplikasi manajemen surat masuk dan surat keluar untuk SD Terpadu Insan Mulia dengan fitur rekap siap cetak dan sistem login.",
+  "requestFramePermissions": []
+}
